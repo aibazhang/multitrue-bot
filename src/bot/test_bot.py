@@ -4,10 +4,21 @@ import sys
 import json
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    ConversationHandler,
+)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from news import NewsAPICollector
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
 
 def start(update, context):
@@ -21,16 +32,22 @@ def start(update, context):
 
     reply_markup = InlineKeyboardMarkup(keyborad)
     update.message.reply_text("Please Choose:", reply_markup=reply_markup)
-    # context.bot.send_message(
-    #     chat_id=update.effective_chat.id, text="I'm a bot, please talk to me"
-    # )
+
+    return "NEWS"
+
+
+def cancel(update, context) -> int:
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    update.message.reply_text("Bye! I hope we can talk again some day.")
+    return ConversationHandler.END
 
 
 def welcome(update, context):
     user = update.message.from_user
     welcome_message = (
         "Hello, {}\n"
-        "this is JC News bot🗞️🤖\n\n"
+        "This is JC News bot🗞️🤖\n\n"
         "You can get Top News Headlines for a Country and a Category here. \n\n"
         '💡Type "Country Category"\n'
         '💡Example "us business"\n\n'
@@ -40,6 +57,8 @@ def welcome(update, context):
         "Please Wait at least 5 seconds to get a Reply🤖\n".format(user.first_name)
     )
     context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_message)
+
+    return "NEWS"
 
 
 def get_headline_news(update, context):
@@ -70,6 +89,7 @@ def get_headline_news(update, context):
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=uncorrect_format_message
         )
+        return "NEWS"
 
     available_condition1 = (
         words[0].lower() in categories and words[1].lower() in countries
@@ -95,6 +115,8 @@ def get_headline_news(update, context):
             chat_id=update.effective_chat.id, text=uncorrect_format_message
         )
 
+    return ConversationHandler.END
+
 
 def main():
     updater = Updater(
@@ -103,21 +125,22 @@ def main():
 
     dispatcher = updater.dispatcher
 
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        level=logging.INFO,
+    # start_handler = CommandHandler("start", start)
+    # dispatcher.add_handler(start_handler)
+
+    conv_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(Filters.regex("^(Hi|hi|hello|Hello|test|Test)"), welcome)
+        ],
+        states={
+            "NEWS": [
+                MessageHandler(Filters.text & (~Filters.command), get_headline_news)
+            ]
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    welcome_handler = MessageHandler(Filters.text & (~Filters.command), welcome)
-    dispatcher.add_handler(welcome_handler)
-
-    headlines_handler = MessageHandler(
-        Filters.text & (~Filters.command), get_headline_news
-    )
-    dispatcher.add_handler(headlines_handler)
-
-    start_handler = CommandHandler("start", start)
-    dispatcher.add_handler(start_handler)
+    dispatcher.add_handler(conv_handler)
 
     updater.start_polling()
     updater.idle()
