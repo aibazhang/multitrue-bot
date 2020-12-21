@@ -21,9 +21,10 @@ class NewsCollector(metaclass=ABCMeta):
     def format_text(self):
         pass
 
-    @abstractmethod
     def collcet_news(self):
-        pass
+        self.obtain_response()
+        self.format_text()
+        return self.return_list
 
     def save_text(self):
         pass
@@ -81,24 +82,30 @@ class NewsAPICollector(NewsCollector):
                 self.return_list.append(
                     "\n\nAgency: "
                     + str(source)
-                    + "\nAuthor :"
+                    + "\nAuthor: "
                     + str(author)
-                    + "\n time:"
+                    + "\nTime: "
                     + str(time)
                     + "\nTitle: "
                     + title
-                    + "\n\nread here: "
+                    + "\n\nRead here: "
                     + str(url)
                 )
         return self.return_list
 
-    def collcet_news(self):
-        self.obtain_response()
-        self.format_text()
-        return self.return_list
-
 
 # class NewsCatcherAPICollector(NewsCollector):
+
+# class GoogleNewsAPICollector(NewsCollector):
+
+"""
+Mediastack
+Webhouse
+Contify
+Connexun
+Aylien
+https://geekflare.com/global-news-api/
+"""
 
 
 if __name__ == "__main__":
