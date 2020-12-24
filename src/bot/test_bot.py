@@ -23,15 +23,36 @@ logger = logging.getLogger(__name__)
 
 
 def start(update, context):
-    keyborad = [
+    keyborad_country = [
         [
-            InlineKeyboardButton("Option 1", callback_data="1"),
-            InlineKeyboardButton("Option 2", callback_data="2"),
+            InlineKeyboardButton("🇺🇸", callback_data="1"),
+            InlineKeyboardButton("🇯🇵", callback_data="2"),
+            InlineKeyboardButton("🇹🇼", callback_data="3"),
         ],
-        [InlineKeyboardButton("Option 3", callback_data="3")],
+        [
+            InlineKeyboardButton("🇰🇷", callback_data="4"),
+            InlineKeyboardButton("🇬🇧", callback_data="5"),
+            InlineKeyboardButton("🇨🇳", callback_data="6"),
+        ],
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyborad)
+    keyborad_category = [
+        [
+            InlineKeyboardButton("👩🏼‍💻Technology", callback_data="1"),
+            InlineKeyboardButton("🧑‍💼Business", callback_data="1"),
+        ],
+        [
+            InlineKeyboardButton("👨🏻‍🎤Entertainment", callback_data="1"),
+            InlineKeyboardButton("👩🏻‍⚕️Health", callback_data="1"),
+        ],
+        [
+            InlineKeyboardButton("👨🏿‍🔬Science", callback_data="1"),
+            InlineKeyboardButton("🏋🏼‍♂️Sports", callback_data="1"),
+        ],
+        [InlineKeyboardButton("🌎General", callback_data="1")],
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyborad_category)
     update.message.reply_text("Please Choose:", reply_markup=reply_markup)
 
     return "NEWS"
@@ -102,14 +123,21 @@ def get_headline_news(update, context):
         nac = NewsAPICollector(country=country, category=category, page_size=5)
         news_list = nac.collcet_news()
 
-        context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Top 5 latest news for you🤖"
-        )
+        if country == "cn":
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Top 5 latest jokes for you🤖🤐"
+            )
+        else:
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text="Top 5 latest news for you🤖"
+            )
+
         for news in news_list:
             context.bot.send_message(chat_id=update.effective_chat.id, text=news)
 
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text='Reply "m" to check menu again🤖'
+            chat_id=update.effective_chat.id,
+            text='Reply "m" to check the main menu again🤖',
         )
 
     else:
@@ -128,8 +156,8 @@ def main():
 
     dispatcher = updater.dispatcher
 
-    # start_handler = CommandHandler("start", start)
-    # dispatcher.add_handler(start_handler)
+    start_handler = CommandHandler("start", start)
+    dispatcher.add_handler(start_handler)
 
     conv_handler = ConversationHandler(
         entry_points=[

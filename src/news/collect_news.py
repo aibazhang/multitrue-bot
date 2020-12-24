@@ -4,6 +4,7 @@ import requests
 import json
 
 from abc import ABCMeta, abstractmethod
+from datetime import datetime, timedelta
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
 
@@ -40,6 +41,7 @@ class NewsAPICollector(NewsCollector):
         sources=None,
         query=None,
         page_size=None,
+        time_zone=9,
     ):
         assert mode in ["top-headlines", "everything", "sources"]
         self.mode = mode
@@ -52,6 +54,7 @@ class NewsAPICollector(NewsCollector):
             "q": query,
             "pageSize": page_size,
         }
+        self.time_zone = time_zone
         self._generate_news_url(self)
 
     @staticmethod
@@ -76,7 +79,7 @@ class NewsAPICollector(NewsCollector):
             author = text["author"]
             title = text["title"]
             url = text["url"]
-            time = text["publishedAt"]
+            time = trans_utc_to_local(text["publishedAt"], self.time_zone)
 
             if self.return_type == "telebot":
                 self.return_list.append(
@@ -108,8 +111,13 @@ https://geekflare.com/global-news-api/
 """
 
 
+def trans_utc_to_local(date_utc, time_zone):
+    datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
+    datetime_local = datetime_utc + timedelta(hours=+time_zone)
+    return datetime_local.strftime("%Y-%m-%d %H:%M:%S")
+
+
 if __name__ == "__main__":
     print(
         NewsAPICollector(country="jp", category="general", page_size=5).collcet_news()
     )
-
