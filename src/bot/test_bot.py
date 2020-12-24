@@ -76,9 +76,12 @@ def get_headline_news(update, context):
     uncorrect_format_message = ("Please type the correct format🤖\n") + main_menu
 
     if len(words) <= 1:
-        context.bot.send_message(
-            chat_id=update.effective_chat.id, text=uncorrect_format_message
-        )
+        if words[0] in ["m", "M"]:
+            context.bot.send_message(chat_id=update.effective_chat.id, text=main_menu)
+        else:
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, text=uncorrect_format_message
+            )
         return "NEWS"
 
     available_condition1 = (
@@ -114,7 +117,8 @@ def get_headline_news(update, context):
             chat_id=update.effective_chat.id, text=uncorrect_format_message
         )
 
-    return ConversationHandler.END
+    # return ConversationHandler.END
+    return "NEWS"
 
 
 def main():
