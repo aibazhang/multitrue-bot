@@ -14,6 +14,7 @@ from telegram.ext import (
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from news import NewsAPICollector
+from bot_message import main_menu
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO,
@@ -48,14 +49,10 @@ def welcome(update, context):
     welcome_message = (
         "Hello, {}\n"
         "This is JC News bot🗞️🤖\n\n"
-        "You can get Top News Headlines for a Country and a Category here. \n\n"
-        '💡Type "Country Category"\n'
-        '💡Example "us business"\n\n'
-        "Supported country:\n US🇺🇸 JP🇯🇵 TW🇹🇼 CN🇨🇳 KR🇰🇷\n\n"
-        "Supported category:\n 👩‍💼business\n ‍👨🏻‍🎤entertainment\n "
-        "🌎general\n 👩🏻‍⚕️health\n 👨🏿‍🔬science\n 🏋🏼‍♂️sports\n 👩🏼‍💻technology\n\n\n"
-        "Please Wait at least 5 seconds to get a Reply🤖\n".format(user.first_name)
-    )
+        "You can get Top News Headlines for a Country and a Category here. \n\n".format(
+            user.first_name
+        )
+    ) + main_menu
     context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_message)
 
     return "NEWS"
@@ -76,14 +73,7 @@ def get_headline_news(update, context):
 
     words = update.message.text.split(" ")
 
-    uncorrect_format_message = (
-        "Please input correct format and wait at least 5 seconds🤖\n"
-        '💡Type "Country Category"\n'
-        '💡Example "us business"\n\n'
-        "Supported country:\n US🇺🇸 JP🇯🇵 TW🇹🇼 CN🇨🇳 KR🇰🇷\n\n"
-        "Supported category:\n 👩‍💼business\n ‍👨🏻‍🎤entertainment\n "
-        "🌎general\n 👩🏻‍⚕️health\n 👨🏿‍🔬science\n 🏋🏼‍♂️sports\n 👩🏼‍💻technology\n\n\n"
-    )
+    uncorrect_format_message = ("Please type the correct format🤖\n") + main_menu
 
     if len(words) <= 1:
         context.bot.send_message(
@@ -108,8 +98,17 @@ def get_headline_news(update, context):
 
         nac = NewsAPICollector(country=country, category=category, page_size=5)
         news_list = nac.collcet_news()
+
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Top 5 latest news for you🤖"
+        )
         for news in news_list:
             context.bot.send_message(chat_id=update.effective_chat.id, text=news)
+
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text='Reply "m" to check menu again🤖'
+        )
+
     else:
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=uncorrect_format_message
