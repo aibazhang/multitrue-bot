@@ -70,7 +70,7 @@ def welcome(update, context):
     welcome_message = (
         "Hello, {}\n"
         "This is JC News bot🗞️🤖\n\n"
-        "You can get Top News Headlines for a Country and a Category here. \n\n".format(
+        "You can get Top News Headlines for a Country and a Category from here. \n\n".format(
             user.first_name
         )
     ) + main_menu
@@ -90,7 +90,7 @@ def get_headline_news(update, context):
         "technology",
     }
 
-    countries = {"us", "jp", "cn", "tw", "kr"}
+    countries = {"us", "jp", "cn", "tw", "kr", "gb"}
 
     words = update.message.text.split(" ")
 
@@ -156,12 +156,10 @@ def main():
 
     dispatcher = updater.dispatcher
 
-    start_handler = CommandHandler("start", start)
-    dispatcher.add_handler(start_handler)
-
     conv_handler = ConversationHandler(
         entry_points=[
-            MessageHandler(Filters.regex("^(Hi|hi|hello|Hello|test|Test)"), welcome)
+            # MessageHandler(Filters.regex("^(Hi|hi|hello|Hello|test|Test)"), welcome)
+            CommandHandler("start", welcome)
         ],
         states={
             "NEWS": [
