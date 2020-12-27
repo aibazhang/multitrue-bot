@@ -10,6 +10,7 @@ from telegram.ext import (
     MessageHandler,
     Filters,
     ConversationHandler,
+    CallbackQueryHandler,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -23,150 +24,143 @@ logger = logging.getLogger(__name__)
 
 
 def start(update, context):
-    keyborad_country = [
-        [
-            InlineKeyboardButton("🇺🇸", callback_data="1"),
-            InlineKeyboardButton("🇯🇵", callback_data="2"),
-            InlineKeyboardButton("🇹🇼", callback_data="3"),
-        ],
-        [
-            InlineKeyboardButton("🇰🇷", callback_data="4"),
-            InlineKeyboardButton("🇬🇧", callback_data="5"),
-            InlineKeyboardButton("🇨🇳", callback_data="6"),
-        ],
-    ]
-
-    keyborad_category = [
-        [
-            InlineKeyboardButton("👩🏼‍💻Technology", callback_data="1"),
-            InlineKeyboardButton("🧑‍💼Business", callback_data="1"),
-        ],
-        [
-            InlineKeyboardButton("👨🏻‍🎤Entertainment", callback_data="1"),
-            InlineKeyboardButton("👩🏻‍⚕️Health", callback_data="1"),
-        ],
-        [
-            InlineKeyboardButton("👨🏿‍🔬Science", callback_data="1"),
-            InlineKeyboardButton("🏋🏼‍♂️Sports", callback_data="1"),
-        ],
-        [InlineKeyboardButton("🌎General", callback_data="1")],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyborad_category)
-    update.message.reply_text("Please Choose:", reply_markup=reply_markup)
-
-    return "NEWS"
-
-
-def cancel(update, context) -> int:
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text("Bye! I hope we can talk again some day.")
-    return ConversationHandler.END
+    logger.info("User %s started the conversation.", user.first_name)
 
-
-def welcome(update, context):
-    user = update.message.from_user
     welcome_message = (
         "Hello, {}\n"
         "This is JC News bot🗞️🤖\n\n"
         "You can get Top News Headlines for a Country and a Category from here. \n\n".format(
             user.first_name
         )
-    ) + main_menu
+    )
+
+    keyborad = [
+        [
+            InlineKeyboardButton("🇺🇸", callback_data="us"),
+            InlineKeyboardButton("🇯🇵", callback_data="jp"),
+            InlineKeyboardButton("🇹🇼", callback_data="tw"),
+        ],
+        [
+            InlineKeyboardButton("🇰🇷", callback_data="kr"),
+            InlineKeyboardButton("🇬🇧", callback_data="gb"),
+            InlineKeyboardButton("🇨🇳", callback_data="cn"),
+        ],
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyborad)
     context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_message)
+    update.message.reply_text("🤖Please Choose a Country:", reply_markup=reply_markup)
 
-    return "NEWS"
+    return "CATEGORY"
 
 
-def get_headline_news(update, context):
-    categories = {
-        "business",
-        "entertainment",
-        "general",
-        "health",
-        "science",
-        "sports",
-        "technology",
-    }
+def start_over(update, context):
+    user = update.message.from_user
+    logger.info("User %s started the conversation.", user.first_name)
 
-    countries = {"us", "jp", "cn", "tw", "kr", "gb"}
+    keyborad = [
+        [
+            InlineKeyboardButton("🇺🇸", callback_data="us"),
+            InlineKeyboardButton("🇯🇵", callback_data="jp"),
+            InlineKeyboardButton("🇹🇼", callback_data="tw"),
+        ],
+        [
+            InlineKeyboardButton("🇰🇷", callback_data="kr"),
+            InlineKeyboardButton("🇬🇧", callback_data="gb"),
+            InlineKeyboardButton("🇨🇳", callback_data="cn"),
+        ],
+    ]
 
-    words = update.message.text.split(" ")
+    reply_markup = InlineKeyboardMarkup(keyborad)
+    update.message.reply_text("🤖Please Choose a Country:", reply_markup=reply_markup)
 
-    uncorrect_format_message = ("Please type the correct format🤖\n") + main_menu
+    return "CATEGORY"
 
-    if len(words) <= 1:
-        if words[0] in ["m", "M"]:
-            context.bot.send_message(chat_id=update.effective_chat.id, text=main_menu)
-        else:
-            context.bot.send_message(
-                chat_id=update.effective_chat.id, text=uncorrect_format_message
-            )
-        return "NEWS"
 
-    available_condition1 = (
-        words[0].lower() in categories and words[1].lower() in countries
-    )
-    available_condition2 = (
-        words[1].lower() in categories and words[0].lower() in countries
-    )
+def select_category(update, context):
+    query = update.callback_query
+    query.answer()
+    country = query.data
+    keyborad = [
+        [
+            InlineKeyboardButton("👩🏼‍💻Technology", callback_data=country + " technology"),
+            InlineKeyboardButton("🧑‍💼Business", callback_data=country + " business"),
+        ],
+        [
+            InlineKeyboardButton("👨🏻‍🎤Entertainment", callback_data=country + " entertainment"),
+            InlineKeyboardButton("👩🏻‍⚕️Health", callback_data=country + " health"),
+        ],
+        [
+            InlineKeyboardButton("👨🏿‍🔬Science", callback_data=country + " science"),
+            InlineKeyboardButton("🏋🏼‍♂️Sports", callback_data=country + " sports"),
+        ],
+        [InlineKeyboardButton("🌎General", callback_data=country + " general")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyborad)
+    query.edit_message_text(text="🤖Please Choose a Category", reply_markup=reply_markup)
 
-    if available_condition1 or available_condition2:
-        if words[0] in categories:
-            category = words[0]
-            country = words[1]
-        else:
-            category = words[1]
-            country = words[0]
+    return "HEADLINES"
 
-        nac = NewsAPICollector(country=country, category=category, page_size=5)
-        news_list = nac.collcet_news()
 
-        if country == "cn":
-            context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Top 5 latest jokes for you🤖🤐"
-            )
-        else:
-            context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Top 5 latest news for you🤖"
-            )
+def get_news(update, context):
+    query = update.callback_query
+    query.answer()
+    country, category = query.data.split(" ")
 
-        for news in news_list:
-            context.bot.send_message(chat_id=update.effective_chat.id, text=news)
+    nac = NewsAPICollector(country=country, category=category, page_size=5)
+    news_list = nac.collcet_news()
 
+    if country == "cn":
         context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='Reply "m" to check the main menu again🤖',
+            chat_id=update.effective_chat.id, text="Top 5 latest jokes for you🤖🤐"
         )
-
     else:
         context.bot.send_message(
-            chat_id=update.effective_chat.id, text=uncorrect_format_message
+            chat_id=update.effective_chat.id, text="Top 5 latest news for you🤖"
         )
 
-    # return ConversationHandler.END
-    return "NEWS"
+    for news in news_list:
+        context.bot.send_message(chat_id=update.effective_chat.id, text=news)
+
+    keyboard = [
+        InlineKeyboardButton("Yes, let's do it again!", callback_data="start over"),
+        InlineKeyboardButton("Nah, I've had enough ...", callback_data="end"),
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("🤖Do want to start over:", reply_markup=reply_markup)
+
+    return "START OVER OR NOT"
+
+
+def end(update, context):
+    query = update.callback_query
+    query.answer()
+    query.edit_message_text(text="See you next time!")
+    return ConversationHandler.END
 
 
 def main():
-    updater = Updater(
-        token=json.load(open("keys.json", "r"))["telegram_key"], use_context=True,
-    )
+    updater = Updater(token=json.load(open("keys.json", "r"))["telegram_key"], use_context=True,)
 
     dispatcher = updater.dispatcher
+    country_pattern = "^us|jp|cn|tw|kr|gb$"
+    headlines_pattern = (
+        "^us|jp|cn|tw|kr|gb business|entertainment|general|health|science|sports|technology|$"
+    )
 
     conv_handler = ConversationHandler(
-        entry_points=[
-            # MessageHandler(Filters.regex("^(Hi|hi|hello|Hello|test|Test)"), welcome)
-            CommandHandler("start", welcome)
-        ],
+        entry_points=[CommandHandler("start", start)],
         states={
-            "NEWS": [
-                MessageHandler(Filters.text & (~Filters.command), get_headline_news)
-            ]
+            "CATEGORY": [CallbackQueryHandler(select_category, pattern=country_pattern)],
+            "HEADLINES": [CallbackQueryHandler(get_news, pattern=headlines_pattern)],
+            "START OVER OR NOT": [
+                CallbackQueryHandler(start_over, pattern="^start_over$"),
+                CallbackQueryHandler(end, pattern="^end$"),
+            ],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[CommandHandler("start", start)],
     )
 
     dispatcher.add_handler(conv_handler)
