@@ -108,10 +108,10 @@ def get_news(update, context):
     query.answer()
     country, category = query.data.split(" ")
 
-    nac = NewsAPICollector(country=country, category=category, page_size=5)
+    nac = NewsAPICollector(country=country, category=category, page_size=10)
     news_list = nac.collcet_news()
 
-    news_list = news_list[:5] if news_list > 5 else news_list
+    news_list = news_list[:5] if len(news_list) > 5 else news_list
 
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Top {} latest news for you🤖".format(len(news_list)),

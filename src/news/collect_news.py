@@ -1,18 +1,21 @@
 import os
-import sys
 import requests
 import json
+import argparse
+import pathlib
 
 from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
 
 class NewsCollector(metaclass=ABCMeta):
-    api_key = None
-    params = {}
-    news_url = None
+    # api_key = None
+    # params = {}
+    # news_url = None
+    def __init__(self):
+        self.block_list = None
 
     @abstractmethod
     def obtain_response(self):
@@ -44,9 +47,11 @@ class NewsAPICollector(NewsCollector):
         time_zone=9,
     ):
         assert mode in ["top-headlines", "everything", "sources"]
+        assert return_type in ["markdown", "telebot"]
+
         self.mode = mode
         self.return_type = return_type
-        self.api_key = json.load(open("keys.json", "r"))["news_api_key"]
+        self.api_key = json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]
         self.params = {
             "country": country,
             "category": category,
@@ -54,6 +59,7 @@ class NewsAPICollector(NewsCollector):
             "q": query,
             "pageSize": page_size,
         }
+        self.block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
         self.time_zone = time_zone
         self._generate_news_url(self)
 
@@ -75,9 +81,12 @@ class NewsAPICollector(NewsCollector):
     def format_text(self):
         self.return_list = []
         for text in self.raw_text_list:
+            title = text["title"]
+            if any(bl in title for bl in self.block_list):
+                continue
+
             source = text["source"]["name"]
             author = text["author"]
-            title = text["title"]
             url = text["url"]
             time = trans_utc_to_local(text["publishedAt"], self.time_zone)
 
@@ -94,6 +103,8 @@ class NewsAPICollector(NewsCollector):
                     + "\n\nRead here: "
                     + str(url)
                 )
+            if self.return_type == "markdown":
+                self.return_list.append("- {} [{}]({})\n".format(time, title, url))
         return self.return_list
 
 
@@ -118,6 +129,19 @@ def trans_utc_to_local(date_utc, time_zone):
 
 
 if __name__ == "__main__":
+    # print(os.path.join(os.path.dirname(__file__), "../.."))
+    parser = argparse.ArgumentParser(description="Get Headline news")
+    parser.add_argument("-l", "--country", type=str, help="country")
+    parser.add_argument("-c", "--category", type=str, help="category")
+    parser.add_argument("-p", "--page_size", type=int, help="page size")
+    args = parser.parse_args()
     print(
-        NewsAPICollector(country="jp", category="general", page_size=5).collcet_news()
+        "".join(
+            NewsAPICollector(
+                country=args.country,
+                category=args.category,
+                page_size=args.page_size,
+                return_type="markdown",
+            ).collcet_news()
+        )
     )
