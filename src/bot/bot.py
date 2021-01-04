@@ -50,14 +50,12 @@ def start(update, context):
 
     reply_markup = InlineKeyboardMarkup(keyborad)
     context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_message)
-    update.message.reply_text("🤖Please Choose a Country:", reply_markup=reply_markup)
+    update.message.reply_text("Please Choose a Country🤖", reply_markup=reply_markup)
 
     return "CATEGORY"
 
 
 def start_over(update, context):
-    user = update.message.from_user
-    logger.info("User %s started the conversation.", user.first_name)
 
     keyborad = [
         [
@@ -73,7 +71,9 @@ def start_over(update, context):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyborad)
-    update.message.reply_text("🤖Please Choose a Country:", reply_markup=reply_markup)
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Please Choose a Country🤖", reply_markup=reply_markup
+    )
 
     return "CATEGORY"
 
@@ -98,7 +98,7 @@ def select_category(update, context):
         [InlineKeyboardButton("🌎General", callback_data=country + " general")],
     ]
     reply_markup = InlineKeyboardMarkup(keyborad)
-    query.edit_message_text(text="🤖Please Choose a Category", reply_markup=reply_markup)
+    query.edit_message_text(text="Please Choose a Category🤖", reply_markup=reply_markup)
 
     return "HEADLINES"
 
@@ -111,25 +111,26 @@ def get_news(update, context):
     nac = NewsAPICollector(country=country, category=category, page_size=5)
     news_list = nac.collcet_news()
 
-    if country == "cn":
-        context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Top 5 latest jokes for you🤖🤐"
-        )
-    else:
-        context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Top 5 latest news for you🤖"
-        )
+    news_list = news_list[:5] if news_list > 5 else news_list
+
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Top {} latest news for you🤖".format(len(news_list)),
+    )
 
     for news in news_list:
         context.bot.send_message(chat_id=update.effective_chat.id, text=news)
 
     keyboard = [
-        InlineKeyboardButton("Yes, let's do it again!", callback_data="start over"),
-        InlineKeyboardButton("Nah, I've had enough ...", callback_data="end"),
+        [
+            InlineKeyboardButton("Let's do it again!", callback_data="start over"),
+            InlineKeyboardButton("I've had enough ...", callback_data="end"),
+        ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("🤖Do want to start over:", reply_markup=reply_markup)
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Do want to start over?🤖", reply_markup=reply_markup
+    )
 
     return "START OVER OR NOT"
 
@@ -137,7 +138,7 @@ def get_news(update, context):
 def end(update, context):
     query = update.callback_query
     query.answer()
-    query.edit_message_text(text="See you next time!")
+    query.edit_message_text(text="See you next time!🤖")
     return ConversationHandler.END
 
 
@@ -156,7 +157,7 @@ def main():
             "CATEGORY": [CallbackQueryHandler(select_category, pattern=country_pattern)],
             "HEADLINES": [CallbackQueryHandler(get_news, pattern=headlines_pattern)],
             "START OVER OR NOT": [
-                CallbackQueryHandler(start_over, pattern="^start_over$"),
+                CallbackQueryHandler(start_over, pattern="^start over$"),
                 CallbackQueryHandler(end, pattern="^end$"),
             ],
         },
