@@ -3,6 +3,8 @@ import sys
 
 import json
 import logging
+import pathlib
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Updater,
@@ -14,6 +16,8 @@ from telegram.ext import (
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
+
 from news import NewsAPICollector
 from bot_message import main_menu
 
@@ -114,7 +118,10 @@ def get_news(update, context):
     news_list = news_list[:5] if len(news_list) > 5 else news_list
 
     context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Top {} latest news for you🤖".format(len(news_list)),
+        chat_id=update.effective_chat.id,
+        text="Top {} latest news of [{}] [{}] for you🤖".format(
+            len(news_list), country.upper(), category.upper()
+        ),
     )
 
     for news in news_list:
@@ -129,7 +136,9 @@ def get_news(update, context):
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Do want to start over?🤖", reply_markup=reply_markup
+        chat_id=update.effective_chat.id,
+        text="Do you want to start over?🤖",
+        reply_markup=reply_markup,
     )
 
     return "START OVER OR NOT"
@@ -143,7 +152,9 @@ def end(update, context):
 
 
 def main():
-    updater = Updater(token=json.load(open("keys.json", "r"))["telegram_key"], use_context=True,)
+    updater = Updater(
+        token=json.load(open(KEY_PATH / "keys.json", "r"))["telegram_key"], use_context=True,
+    )
 
     dispatcher = updater.dispatcher
     country_pattern = "^us|jp|cn|tw|kr|gb$"
