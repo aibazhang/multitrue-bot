@@ -11,18 +11,38 @@ KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
 
 class NewsCollector(metaclass=ABCMeta):
-    def __init__(self):
-        self.block_list = None
-        self.print_format = None
-        self.api_key = None
-        self.news_url
-
     @abstractmethod
-    def generate_news_url(self):
+    def format_text(self):
         pass
 
     @abstractmethod
-    def format_text(self):
+    def filter_news(self):
+        pass
+
+    @abstractmethod
+    def print_news(self):
+        pass
+
+    @abstractmethod
+    def collcet_news(self):
+        pass
+
+    @abstractmethod
+    def save_text(self):
+        pass
+
+
+class WebNewsCollector(NewsCollector):
+    def __init__(self):
+        self.params = None
+        self.block_list = None
+        self.print_format = None
+        self.api_key = None
+        self.news_url = None
+        self.mode = None
+
+    @abstractmethod
+    def generate_news_url(self):
         pass
 
     def obtain_response(self):
@@ -59,7 +79,7 @@ class NewsCollector(metaclass=ABCMeta):
         pass
 
 
-class NewsAPICollector(NewsCollector):
+class NewsAPICollector(WebNewsCollector):
     def __init__(
         self,
         print_format="telebot",
