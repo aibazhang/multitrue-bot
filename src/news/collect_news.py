@@ -90,6 +90,11 @@ class NewsAPICollector(NewsCollector):
             url = text["url"]
             time = trans_utc_to_local(text["publishedAt"], self.time_zone)
 
+            news_datetime = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+
+            if datetime.now() - news_datetime > timedelta(hours=+28):
+                continue
+
             if self.return_type == "telebot":
                 self.return_list.append(
                     "\n\nAgency: "

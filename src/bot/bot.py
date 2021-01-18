@@ -19,7 +19,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
 from news import NewsAPICollector
-from bot_message import main_menu
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO,
@@ -29,7 +28,9 @@ logger = logging.getLogger(__name__)
 
 def start(update, context):
     user = update.message.from_user
-    logger.info("User %s started the conversation.", user.first_name)
+    logger.info("User {} started the conversation.".format(user))
+    for i, v in vars(user).items():
+        context.user_data[i] = v
 
     welcome_message = (
         "Hello, {}\n"
@@ -38,7 +39,7 @@ def start(update, context):
             user.first_name
         )
     )
-
+    print(context)
     keyborad = [
         [
             InlineKeyboardButton("🇺🇸", callback_data="us"),
@@ -83,6 +84,10 @@ def start_over(update, context):
 
 
 def select_category(update, context):
+    logger.info("User data from context {}".format(context.user_data))
+    logger.info("Chat data from context {}".format(context.chat_data))
+    logger.info("Bot data from context {}".format(context.bot_data))
+
     query = update.callback_query
     query.answer()
     country = query.data
@@ -130,7 +135,7 @@ def get_news(update, context):
     keyboard = [
         [
             InlineKeyboardButton("Let's do it again!", callback_data="start over"),
-            InlineKeyboardButton("I've had enough ...", callback_data="end"),
+            InlineKeyboardButton("I've had enough...", callback_data="end"),
         ]
     ]
 
@@ -148,6 +153,10 @@ def end(update, context):
     query = update.callback_query
     query.answer()
     query.edit_message_text(text="See you next time!🤖")
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="(Type '/start' to restart me)🤖",
+    )
+
     return ConversationHandler.END
 
 
