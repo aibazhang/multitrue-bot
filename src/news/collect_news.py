@@ -14,18 +14,20 @@ class NewsCollector(metaclass=ABCMeta):
     def __init__(self):
         self.block_list = None
         self.print_format = None
+        self.api_key = None
+        self.news_url
 
     @abstractmethod
-    def obtain_response(self):
+    def generate_news_url(self):
         pass
 
     @abstractmethod
     def format_text(self):
         pass
 
-    @abstractmethod
-    def generate_news_url(self):
-        pass
+    def obtain_response(self):
+        headers = {"X-Api-Key": self.api_key}
+        self.response = requests.get(self.news_url, headers=headers).text
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
@@ -49,9 +51,9 @@ class NewsCollector(metaclass=ABCMeta):
             return "- {} [{}]({})\n".format(time, title, url)
 
     def collcet_news(self):
+        self.generate_news_url()
         self.obtain_response()
-        self.format_text()
-        return self.return_list
+        return self.format_text()
 
     def save_text(self):
         pass
@@ -83,7 +85,6 @@ class NewsAPICollector(NewsCollector):
         }
         self.block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
         self.time_zone = time_zone
-        self.generate_news_url()
 
     def generate_news_url(self):
         self.news_url = "https://newsapi.org/v2/{}".format(self.mode)
@@ -94,14 +95,9 @@ class NewsAPICollector(NewsCollector):
                 else:
                     self.news_url += "&{}={}".format(i, v)
 
-    def obtain_response(self):
-        headers = {"X-Api-Key": self.api_key}
-        response = requests.get(self.news_url, headers=headers).text
-        self.raw_text_list = json.loads(response)["articles"]
-
     def format_text(self):
-        self.return_list = []
-        for text in self.raw_text_list:
+        return_list = []
+        for text in json.loads(self.response)["articles"]:
             title = text["title"]
             if self.filter_news(title):
                 continue
@@ -116,8 +112,8 @@ class NewsAPICollector(NewsCollector):
             if datetime.now() - news_datetime > timedelta(hours=+28):
                 continue
 
-            self.return_list.append(self.print_news(time, title, url, author, source))
-        return self.return_list
+            return_list.append(self.print_news(time, title, url, author, source))
+        return return_list
 
 
 # class NewsCatcherAPICollector(NewsCollector):
