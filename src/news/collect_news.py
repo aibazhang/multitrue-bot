@@ -10,6 +10,27 @@ from datetime import datetime, timedelta
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
 
+class News:
+    def __init__(self):
+        self.title = None
+        self.source = None
+        self.author = None
+        self.publish_time = None
+        self.description = None
+        self.content = None
+        self.url = None
+        self.url_to_image = None
+
+    def is_latest(self):
+        news_datetime = datetime.strptime(self.publish_time, "%Y-%m-%d %H:%M:%S")
+        return datetime.now() - news_datetime < timedelta(hours=+28)
+
+    def trans_utc_to_local(self, date_utc, time_zone):
+        datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
+        datetime_local = datetime_utc + timedelta(hours=+time_zone)
+        return datetime_local.strftime("%Y-%m-%d %H:%M:%S")
+
+
 class NewsCollector(metaclass=ABCMeta):
     @abstractmethod
     def format_text(self):
@@ -40,6 +61,7 @@ class WebNewsCollector(NewsCollector):
         self.api_key = None
         self.news_url = None
         self.mode = None
+        self.time_zone = None
 
     @abstractmethod
     def generate_news_url(self):
@@ -75,8 +97,11 @@ class WebNewsCollector(NewsCollector):
         self.obtain_response()
         return self.format_text()
 
+    def format_text(self):
+        raise NotImplementedError
+
     def save_text(self):
-        pass
+        raise NotImplementedError
 
 
 class NewsAPICollector(WebNewsCollector):
@@ -118,27 +143,32 @@ class NewsAPICollector(WebNewsCollector):
     def format_text(self):
         return_list = []
         for text in json.loads(self.response)["articles"]:
-            title = text["title"]
-            if self.filter_news(title):
+            news = News()
+            news.title = text["title"]
+            if self.filter_news(news.title):
                 continue
 
-            source = text["source"]["name"]
-            author = text["author"]
-            url = text["url"]
-            time = trans_utc_to_local(text["publishedAt"], self.time_zone)
+            news.source = text["source"]["name"]
+            news.author = text["author"]
+            news.url = text["url"]
+            news.publish_time = news.trans_utc_to_local(text["publishedAt"], self.time_zone)
 
-            news_datetime = datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
-
-            if datetime.now() - news_datetime > timedelta(hours=+28):
-                continue
-
-            return_list.append(self.print_news(time, title, url, author, source))
+            if news.is_latest:
+                return_list.append(
+                    self.print_news(
+                        time=news.publish_time,
+                        title=news.title,
+                        url=news.url,
+                        author=news.author,
+                        source=news.source,
+                    )
+                )
         return return_list
 
 
-# class NewsCatcherAPICollector(NewsCollector):
+# class NewsCatcherAPICollector(WebNewsCollector):
 
-# class GoogleNewsAPICollector(NewsCollector):
+# class GoogleNewsAPICollector(WebNewsCollector):
 
 """
 Mediastack
@@ -150,14 +180,7 @@ https://geekflare.com/global-news-api/
 """
 
 
-def trans_utc_to_local(date_utc, time_zone):
-    datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
-    datetime_local = datetime_utc + timedelta(hours=+time_zone)
-    return datetime_local.strftime("%Y-%m-%d %H:%M:%S")
-
-
 if __name__ == "__main__":
-    # print(os.path.join(os.path.dirname(__file__), "../.."))
     parser = argparse.ArgumentParser(description="Get Headline news")
     parser.add_argument("-l", "--country", type=str, help="country")
     parser.add_argument("-c", "--category", type=str, help="category")
