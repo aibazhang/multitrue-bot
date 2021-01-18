@@ -11,11 +11,9 @@ KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
 
 class NewsCollector(metaclass=ABCMeta):
-    # api_key = None
-    # params = {}
-    # news_url = None
     def __init__(self):
         self.block_list = None
+        self.print_format = None
 
     @abstractmethod
     def obtain_response(self):
@@ -24,6 +22,31 @@ class NewsCollector(metaclass=ABCMeta):
     @abstractmethod
     def format_text(self):
         pass
+
+    @abstractmethod
+    def generate_news_url(self):
+        pass
+
+    def filter_news(self, text):
+        return any(bl in text for bl in self.block_list)
+
+    def print_news(self, time, title, url, author, source):
+        assert self.print_format in ["markdown", "telebot"]
+        if self.print_format == "telebot":
+            return (
+                "\n\nAgency: "
+                + str(source)
+                + "\nAuthor: "
+                + str(author)
+                + "\nTime: "
+                + str(time)
+                + "\nTitle: "
+                + title
+                + "\n\nRead here: "
+                + str(url)
+            )
+        if self.print_format == "markdown":
+            return "- {} [{}]({})\n".format(time, title, url)
 
     def collcet_news(self):
         self.obtain_response()
@@ -37,7 +60,7 @@ class NewsCollector(metaclass=ABCMeta):
 class NewsAPICollector(NewsCollector):
     def __init__(
         self,
-        return_type="telebot",
+        print_format="telebot",
         mode="top-headlines",
         country=None,
         category=None,
@@ -47,10 +70,9 @@ class NewsAPICollector(NewsCollector):
         time_zone=9,
     ):
         assert mode in ["top-headlines", "everything", "sources"]
-        assert return_type in ["markdown", "telebot"]
 
         self.mode = mode
-        self.return_type = return_type
+        self.print_format = print_format
         self.api_key = json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]
         self.params = {
             "country": country,
@@ -61,10 +83,9 @@ class NewsAPICollector(NewsCollector):
         }
         self.block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
         self.time_zone = time_zone
-        self._generate_news_url(self)
+        self.generate_news_url()
 
-    @staticmethod
-    def _generate_news_url(self):
+    def generate_news_url(self):
         self.news_url = "https://newsapi.org/v2/{}".format(self.mode)
         for i, v in self.params.items():
             if v is not None:
@@ -82,7 +103,7 @@ class NewsAPICollector(NewsCollector):
         self.return_list = []
         for text in self.raw_text_list:
             title = text["title"]
-            if any(bl in title for bl in self.block_list):
+            if self.filter_news(title):
                 continue
 
             source = text["source"]["name"]
@@ -95,21 +116,7 @@ class NewsAPICollector(NewsCollector):
             if datetime.now() - news_datetime > timedelta(hours=+28):
                 continue
 
-            if self.return_type == "telebot":
-                self.return_list.append(
-                    "\n\nAgency: "
-                    + str(source)
-                    + "\nAuthor: "
-                    + str(author)
-                    + "\nTime: "
-                    + str(time)
-                    + "\nTitle: "
-                    + title
-                    + "\n\nRead here: "
-                    + str(url)
-                )
-            if self.return_type == "markdown":
-                self.return_list.append("- {} [{}]({})\n".format(time, title, url))
+            self.return_list.append(self.print_news(time, title, url, author, source))
         return self.return_list
 
 
@@ -146,7 +153,7 @@ if __name__ == "__main__":
                 country=args.country,
                 category=args.category,
                 page_size=args.page_size,
-                return_type="markdown",
+                print_format="markdown",
             ).collcet_news()
         )
     )
