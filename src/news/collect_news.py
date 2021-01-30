@@ -25,7 +25,8 @@ class News:
         news_datetime = datetime.strptime(self.published_time, "%Y-%m-%d %H:%M:%S")
         return (datetime.now() - news_datetime) < timedelta(hours=+28)
 
-    def trans_utc_to_local(self, date_utc, time_zone):
+    @staticmethod
+    def trans_utc_to_local(date_utc, time_zone):
         datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
         datetime_local = datetime_utc + timedelta(hours=+time_zone)
         return datetime_local.strftime("%Y-%m-%d %H:%M:%S")
