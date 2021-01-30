@@ -15,15 +15,15 @@ class News:
         self.title = None
         self.source = None
         self.author = None
-        self.publish_time = None
+        self.published_time = None
         self.description = None
         self.content = None
         self.url = None
         self.url_to_image = None
 
     def is_latest(self):
-        news_datetime = datetime.strptime(self.publish_time, "%Y-%m-%d %H:%M:%S")
-        return datetime.now() - news_datetime < timedelta(hours=+28)
+        news_datetime = datetime.strptime(self.published_time, "%Y-%m-%d %H:%M:%S")
+        return (datetime.now() - news_datetime) < timedelta(hours=+28)
 
     def trans_utc_to_local(self, date_utc, time_zone):
         datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
@@ -68,6 +68,8 @@ class WebNewsCollector(NewsCollector):
         pass
 
     def obtain_response(self):
+        # TODO: Deal this error
+        # '{"status":"error","code":"parametersMissing","message":""}
         headers = {"X-Api-Key": self.api_key}
         self.response = requests.get(self.news_url, headers=headers).text
 
@@ -151,12 +153,12 @@ class NewsAPICollector(WebNewsCollector):
             news.source = text["source"]["name"]
             news.author = text["author"]
             news.url = text["url"]
-            news.publish_time = news.trans_utc_to_local(text["publishedAt"], self.time_zone)
+            news.published_time = news.trans_utc_to_local(text["publishedAt"], self.time_zone)
 
-            if news.is_latest:
+            if news.is_latest():
                 return_list.append(
                     self.print_news(
-                        time=news.publish_time,
+                        time=news.published_time,
                         title=news.title,
                         url=news.url,
                         author=news.author,
