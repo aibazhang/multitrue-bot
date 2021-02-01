@@ -25,16 +25,15 @@ class News:
         news_datetime = datetime.strptime(self.published_time, "%Y-%m-%d %H:%M:%S")
         return (datetime.now() - news_datetime) < timedelta(hours=+28)
 
-    @staticmethod
-    def trans_utc_to_local(date_utc, time_zone):
+    def trans_utc_to_local(self, date_utc, time_zone):
         datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
         datetime_local = datetime_utc + timedelta(hours=+time_zone)
-        return datetime_local.strftime("%Y-%m-%d %H:%M:%S")
+        self.published_time = datetime_local.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class NewsCollector(metaclass=ABCMeta):
     @abstractmethod
-    def format_text(self):
+    def format_news(self):
         pass
 
     @abstractmethod
@@ -50,21 +49,39 @@ class NewsCollector(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def save_text(self):
+    def save_news(self):
         pass
 
 
 class WebNewsCollector(NewsCollector):
-    def __init__(self):
-        self.params = None
-        self.block_list = None
-        self.print_format = None
-        self.api_key = None
-        self.base_url = None
-        self._mode = None
-        self.time_zone = None
+    def __init__(
+        self,
+        params=None,
+        block_list=None,
+        print_format=None,
+        api_key=None,
+        base_url=None,
+        mode=None,
+        news_list=None,
+        time_zone=None,
+    ):
+        self.params = params
+        self.print_format = print_format
+        self.api_key = api_key
+        self.base_url = base_url
+        self._mode = mode
+        if news_list is None:
+            news_list = list()
+        if time_zone is None:
+            time_zone = 9
+        if block_list is None:
+            block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
 
-    def obtain_response(self):
+        self.news_list = news_list
+        self.time_zone = time_zone
+        self.block_list = block_list
+
+    def _get(self):
         headers = {"X-Api-Key": self.api_key}
         self.response = requests.get(
             self.base_url + self.mode, headers=headers, params=self.params
@@ -90,33 +107,47 @@ class WebNewsCollector(NewsCollector):
                 + str(url)
             )
         if self.print_format == "markdown":
-            return "- {} [{}]({})\n\n".format(time, title, url)
+            print("- {} [{}]({})\n".format(time, title, url))
 
     def collcet_news(self):
-        self.obtain_response()
-        return self.format_text()
+        self._get()
+        self.format_news()
+        for news in self.news_list:
+            if self.filter_news(news.title):
+                continue
 
-    def format_text(self):
+            news.trans_utc_to_local(news.published_time, self.time_zone)
+            if news.is_latest():
+                self.print_news(
+                    time=news.published_time,
+                    title=news.title,
+                    url=news.url,
+                    author=news.author,
+                    source=news.source,
+                )
+
+    def format_news(self):
         raise NotImplementedError
 
-    def save_text(self):
+    def save_news(self):
         raise NotImplementedError
 
 
 class NewsAPICollector(WebNewsCollector):
     def __init__(
         self,
-        print_format="telebot",
-        mode="top-headlines",
+        print_format=None,
+        mode=None,
         country=None,
         category=None,
         sources=None,
         query=None,
         page_size=None,
-        time_zone=9,
     ):
+        super().__init__()
         self._mode = mode
         self.print_format = print_format
+        self.base_url = "https://newsapi.org/v2/"
         self.api_key = json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]
         self.params = {
             "country": country,
@@ -125,9 +156,6 @@ class NewsAPICollector(WebNewsCollector):
             "q": query,
             "pageSize": page_size,
         }
-        self.base_url = "https://newsapi.org/v2/"
-        self.block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
-        self.time_zone = time_zone
 
     @property
     def mode(self):
@@ -137,31 +165,15 @@ class NewsAPICollector(WebNewsCollector):
             raise NotImplementedError
         return self._mode
 
-    def format_text(self):
-        return_list = []
+    def format_news(self):
         for text in json.loads(self.response)["articles"]:
             news = News()
             news.title = text["title"]
-            if self.filter_news(news.title):
-                continue
-
             news.source = text["source"]["name"]
             news.author = text["author"]
             news.url = text["url"]
-            news.published_time = news.trans_utc_to_local(text["publishedAt"], self.time_zone)
-
-            if news.is_latest():
-                return_list.append(
-                    self.print_news(
-                        time=news.published_time,
-                        title=news.title,
-                        url=news.url,
-                        author=news.author,
-                        source=news.source,
-                    )
-                )
-
-        return return_list
+            news.published_time = text["publishedAt"]
+            self.news_list.append(news)
 
 
 # class NewsCatcherAPICollector(WebNewsCollector):
@@ -184,13 +196,11 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--category", type=str, help="category")
     parser.add_argument("-p", "--page_size", type=int, help="page size")
     args = parser.parse_args()
-    print(
-        "".join(
-            NewsAPICollector(
-                country=args.country,
-                category=args.category,
-                page_size=args.page_size,
-                print_format="markdown",
-            ).collcet_news()
-        )
-    )
+
+    NewsAPICollector(
+        country=args.country,
+        category=args.category,
+        page_size=args.page_size,
+        print_format="markdown",
+        mode="top-headlines",
+    ).collcet_news()

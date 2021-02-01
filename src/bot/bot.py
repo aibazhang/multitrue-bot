@@ -118,7 +118,7 @@ def get_news(update, context):
     country, category = query.data.split(" ")
 
     nac = NewsAPICollector(country=country, category=category, page_size=10)
-    news_list = nac.collcet_news()
+    news_list = nac.collcet_news(print_format="telebot")
 
     news_list = news_list[:5] if len(news_list) > 5 else news_list
 
