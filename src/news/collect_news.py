@@ -30,6 +30,23 @@ class News:
         datetime_local = datetime_utc + timedelta(hours=+time_zone)
         self.published_time = datetime_local.strftime("%Y-%m-%d %H:%M:%S")
 
+    def print_format_telebot(self):
+        return (
+            "\n\nAgency: "
+            + str(self.source)
+            + "\nAuthor: "
+            + str(self.author)
+            + "\nTime: "
+            + str(self.published_time)
+            + "\nTitle: "
+            + self.title
+            + "\n\nRead here: "
+            + str(self.url)
+        )
+
+    def print_format_markdown(self):
+        return "- {} [{}]({})\n".format(self.published_time, self.title, self.url)
+
 
 class NewsCollector(metaclass=ABCMeta):
     @abstractmethod
@@ -90,24 +107,13 @@ class WebNewsCollector(NewsCollector):
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
 
-    def print_news(self, time, title, url, author, source):
+    def print_news(self, news):
         if self.print_format not in ["markdown", "telebot"]:
             raise NotImplementedError
         if self.print_format == "telebot":
-            return (
-                "\n\nAgency: "
-                + str(source)
-                + "\nAuthor: "
-                + str(author)
-                + "\nTime: "
-                + str(time)
-                + "\nTitle: "
-                + title
-                + "\n\nRead here: "
-                + str(url)
-            )
+            return news.print_format_telebot()
         if self.print_format == "markdown":
-            print("- {} [{}]({})\n".format(time, title, url))
+            print(news.print_format_markdown())
 
     def collcet_news(self):
         self._get()
@@ -118,13 +124,7 @@ class WebNewsCollector(NewsCollector):
 
             news.trans_utc_to_local(news.published_time, self.time_zone)
             if news.is_latest():
-                self.print_news(
-                    time=news.published_time,
-                    title=news.title,
-                    url=news.url,
-                    author=news.author,
-                    source=news.source,
-                )
+                self.print_news(news)
 
     def format_news(self):
         raise NotImplementedError
