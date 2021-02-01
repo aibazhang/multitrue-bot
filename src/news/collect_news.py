@@ -64,15 +64,11 @@ class WebNewsCollector(NewsCollector):
         self._mode = None
         self.time_zone = None
 
-    @abstractmethod
-    def generate_base_url(self):
-        pass
-
     def obtain_response(self):
-        # TODO: Deal this error
-        # '{"status":"error","code":"parametersMissing","message":""}
         headers = {"X-Api-Key": self.api_key}
-        self.response = requests.get(self.base_url, headers=headers).text
+        self.response = requests.get(
+            self.base_url + self.mode, headers=headers, params=self.params
+        ).text
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
@@ -97,7 +93,6 @@ class WebNewsCollector(NewsCollector):
             return "- {} [{}]({})\n\n".format(time, title, url)
 
     def collcet_news(self):
-        self.generate_base_url()
         self.obtain_response()
         return self.format_text()
 
@@ -130,6 +125,7 @@ class NewsAPICollector(WebNewsCollector):
             "q": query,
             "pageSize": page_size,
         }
+        self.base_url = "https://newsapi.org/v2/"
         self.block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
         self.time_zone = time_zone
 
@@ -140,15 +136,6 @@ class NewsAPICollector(WebNewsCollector):
         if self._mode not in ["top-headlines", "everything", "sources"]:
             raise NotImplementedError
         return self._mode
-
-    def generate_base_url(self):
-        self.base_url = "https://newsapi.org/v2/{}".format(self.mode)
-        for i, v in self.params.items():
-            if v is not None:
-                if i == "country":
-                    self.base_url += "?{}={}".format(i, v)
-                else:
-                    self.base_url += "&{}={}".format(i, v)
 
     def format_text(self):
         return_list = []
