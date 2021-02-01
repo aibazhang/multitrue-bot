@@ -60,25 +60,26 @@ class WebNewsCollector(NewsCollector):
         self.block_list = None
         self.print_format = None
         self.api_key = None
-        self.news_url = None
-        self.mode = None
+        self.base_url = None
+        self._mode = None
         self.time_zone = None
 
     @abstractmethod
-    def generate_news_url(self):
+    def generate_base_url(self):
         pass
 
     def obtain_response(self):
         # TODO: Deal this error
         # '{"status":"error","code":"parametersMissing","message":""}
         headers = {"X-Api-Key": self.api_key}
-        self.response = requests.get(self.news_url, headers=headers).text
+        self.response = requests.get(self.base_url, headers=headers).text
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
 
     def print_news(self, time, title, url, author, source):
-        assert self.print_format in ["markdown", "telebot"]
+        if self.print_format not in ["markdown", "telebot"]:
+            raise NotImplementedError
         if self.print_format == "telebot":
             return (
                 "\n\nAgency: "
@@ -93,10 +94,10 @@ class WebNewsCollector(NewsCollector):
                 + str(url)
             )
         if self.print_format == "markdown":
-            return "- {} [{}]({})\n".format(time, title, url)
+            return "- {} [{}]({})\n\n".format(time, title, url)
 
     def collcet_news(self):
-        self.generate_news_url()
+        self.generate_base_url()
         self.obtain_response()
         return self.format_text()
 
@@ -119,9 +120,7 @@ class NewsAPICollector(WebNewsCollector):
         page_size=None,
         time_zone=9,
     ):
-        assert mode in ["top-headlines", "everything", "sources"]
-
-        self.mode = mode
+        self._mode = mode
         self.print_format = print_format
         self.api_key = json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]
         self.params = {
@@ -134,14 +133,22 @@ class NewsAPICollector(WebNewsCollector):
         self.block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
         self.time_zone = time_zone
 
-    def generate_news_url(self):
-        self.news_url = "https://newsapi.org/v2/{}".format(self.mode)
+    @property
+    def mode(self):
+        if self._mode is None:
+            self = "top-headlines"
+        if self._mode not in ["top-headlines", "everything", "sources"]:
+            raise NotImplementedError
+        return self._mode
+
+    def generate_base_url(self):
+        self.base_url = "https://newsapi.org/v2/{}".format(self.mode)
         for i, v in self.params.items():
             if v is not None:
                 if i == "country":
-                    self.news_url += "?{}={}".format(i, v)
+                    self.base_url += "?{}={}".format(i, v)
                 else:
-                    self.news_url += "&{}={}".format(i, v)
+                    self.base_url += "&{}={}".format(i, v)
 
     def format_text(self):
         return_list = []
@@ -166,6 +173,7 @@ class NewsAPICollector(WebNewsCollector):
                         source=news.source,
                     )
                 )
+
         return return_list
 
 
