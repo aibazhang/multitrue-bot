@@ -20,13 +20,16 @@ class News:
         self.content = None
         self.url = None
         self.url_to_image = None
+        self.country = None
+        self.language = None
+        self.copyright = None
 
     def is_latest(self):
         news_datetime = datetime.strptime(self.published_time, "%Y-%m-%d %H:%M:%S")
         return (datetime.now() - news_datetime) < timedelta(hours=+28)
 
-    def trans_utc_to_local(self, date_utc, time_zone):
-        datetime_utc = datetime.strptime(date_utc.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
+    def trans_utc_to_local(self, date_utc, time_zone, time_format):
+        datetime_utc = datetime.strptime(date_utc.replace("Z", ""), time_format)
         datetime_local = datetime_utc + timedelta(hours=+time_zone)
         self.published_time = datetime_local.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -81,15 +84,15 @@ class WebNewsCollector(NewsCollector):
         params=None,
         block_list=None,
         print_format=None,
-        api_key=None,
         base_url=None,
         mode=None,
         news_list=None,
         time_zone=None,
+        time_format=None,
+        headers=None,
     ):
         self.params = params
         self.print_format = print_format
-        self.api_key = api_key
         self.base_url = base_url
         self._mode = mode
         if news_list is None:
@@ -101,12 +104,15 @@ class WebNewsCollector(NewsCollector):
 
         self.news_list = news_list
         self.time_zone = time_zone
+        self.time_format = time_format
         self.block_list = block_list
 
+        self.headers = headers
+
     def _get(self):
-        headers = {"X-Api-Key": self.api_key}
+        # TODO: throw and error
         self.response = requests.get(
-            self.base_url + self.mode, headers=headers, params=self.params
+            self.base_url + self.mode, headers=self.headers, params=self.params
         ).text
 
     def filter_news(self, text):
@@ -127,7 +133,7 @@ class WebNewsCollector(NewsCollector):
             if self.filter_news(news.title):
                 continue
 
-            news.trans_utc_to_local(news.published_time, self.time_zone)
+            news.trans_utc_to_local(news.published_time, self.time_zone, self.time_format)
             if news.is_latest():
                 self.print_news(news)
 
@@ -153,7 +159,8 @@ class NewsAPICollector(WebNewsCollector):
         self._mode = mode
         self.print_format = print_format
         self.base_url = "https://newsapi.org/v2/"
-        self.api_key = json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]
+        self.headers = {"X-Api-Key": json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]}
+        self.time_format = "%Y-%m-%dT%H:%M:%S"
         self.params = {
             "country": country,
             "category": category,
@@ -165,7 +172,7 @@ class NewsAPICollector(WebNewsCollector):
     @property
     def mode(self):
         if self._mode is None:
-            self = "top-headlines"
+            self._mode = "top-headlines"
         if self._mode not in ["top-headlines", "everything", "sources"]:
             raise NotImplementedError
         return self._mode
@@ -181,12 +188,49 @@ class NewsAPICollector(WebNewsCollector):
             self.news_list.append(news)
 
 
-# class NewsCatcherAPICollector(WebNewsCollector):
+class NewsCatcherAPICollector(WebNewsCollector):
+    def __init__(
+        self, print_format=None, mode=None, lang=None, country=None, topic=None,
+    ):
+        super().__init__()
+        self._mode = mode
+        self.print_format = print_format
+        self.time_format = "%Y-%m-%d %H:%M:%S"
+        self.base_url = "https://newscatcher.p.rapidapi.com/v1/"
+        self.headers = {
+            "x-rapidapi-key": json.load(open(KEY_PATH / "keys.json", "r"))["news_catcher_key"],
+            "x-rapidapi-host": "newscatcher.p.rapidapi.com",
+        }
+        self.params = {"lang": lang, "country": country, "topic": topic}
 
-# class GoogleNewsAPICollector(WebNewsCollector):
+    @property
+    def mode(self):
+        if self._mode is None:
+            self._mode = "latest_headlines"
+        if self._mode not in ["latest_headlines"]:
+            raise NotImplementedError
+        return self._mode
+
+    def format_news(self):
+        for text in json.loads(self.response)["articles"]:
+            news = News()
+            news.title = text["title"]
+            news.source = text["clean_url"]
+            news.author = text["author"]
+            news.url = text["link"]
+            news.published_time = text["published_date"]
+            news.country = text["country"]
+            news.language = text["language"]
+            news.copyright = text["rights"]
+            news.description = text["summary"]
+
+            self.news_list.append(news)
+
 
 """
 Mediastack
+https://mediastack.com/documentation
+
 Webhouse
 Contify
 Connexun
@@ -202,10 +246,16 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--page_size", type=int, help="page size")
     args = parser.parse_args()
 
-    NewsAPICollector(
-        country=args.country,
-        category=args.category,
-        page_size=args.page_size,
-        print_format="markdown",
-        mode="top-headlines",
-    ).collcet_news()
+    # nac = NewsAPICollector(
+    #     country=args.country,
+    #     category=args.category,
+    #     page_size=args.page_size,
+    #     print_format="markdown",
+    #     mode="top-headlines",
+    # )
+
+    # nac.collcet_news()
+
+    # nca = NewsCatcherAPICollector(print_format="markdown", lang="ja", topic="news")
+    # nca.collcet_news()
+
