@@ -1,1 +1,1 @@
-from .collect_news import NewsAPICollector
+from .collector import NewsAPICollector
