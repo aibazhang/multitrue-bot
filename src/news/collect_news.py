@@ -71,6 +71,11 @@ class NewsCollector(metaclass=ABCMeta):
 
 
 class WebNewsCollector(NewsCollector):
+    """
+    TODO: 
+        - log feature
+    """
+
     def __init__(
         self,
         params=None,
