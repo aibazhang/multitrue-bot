@@ -1,5 +1,5 @@
 # big-hea
 
-A multi-language telegram new bot
+A multi-language telegram news bot
 
 ![demo2](./demo2.gif)
