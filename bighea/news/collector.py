@@ -4,7 +4,7 @@ import json
 import pathlib
 
 from abc import ABCMeta, abstractmethod
-from news import News
+from .news import News
 
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
@@ -33,7 +33,7 @@ class NewsCollector(metaclass=ABCMeta):
 
 class WebNewsCollector(NewsCollector):
     """
-    TODO: 
+    TODO:
         - log feature
     """
 
@@ -69,9 +69,7 @@ class WebNewsCollector(NewsCollector):
 
     def _get(self):
         # TODO: throw and error
-        self.response = requests.get(
-            self.base_url + self.mode, headers=self.headers, params=self.params
-        ).text
+        self.response = requests.get(self.base_url + self.mode, headers=self.headers, params=self.params).text
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
@@ -148,7 +146,12 @@ class NewsAPICollector(WebNewsCollector):
 
 class NewsCatcherAPICollector(WebNewsCollector):
     def __init__(
-        self, print_format=None, mode=None, lang=None, country=None, topic=None,
+        self,
+        print_format=None,
+        mode=None,
+        lang=None,
+        country=None,
+        topic=None,
     ):
         super().__init__()
         self._mode = mode
@@ -212,4 +215,3 @@ if __name__ == "__main__":
 
     # nca = NewsCatcherAPICollector(print_format="markdown", lang="ja", topic="news")
     # nca.collcet_news()
-
