@@ -1,2 +1,2 @@
-from bighea.news.collector import NewsAPICollector, NewsCatcherAPICollector
-from bighea.news.news import News
+from .news.collector import WebNewsCollector, NewsAPICollector, NewsCatcherAPICollector
+from .news.news import News
