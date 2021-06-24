@@ -4,7 +4,7 @@ import json
 import pathlib
 
 from abc import ABCMeta, abstractmethod
-from news import News
+from .news import News
 
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
@@ -32,11 +32,6 @@ class NewsCollector(metaclass=ABCMeta):
 
 
 class WebNewsCollector(NewsCollector):
-    """
-    TODO:
-        - log feature
-    """
-
     def __init__(
         self,
         params=None,
@@ -199,19 +194,3 @@ Connexun
 Aylien
 https://geekflare.com/global-news-api/
 """
-
-
-if __name__ == "__main__":
-
-    nac = NewsAPICollector(
-        country="jp",
-        category="general",
-        page_size=10,
-        print_format="markdown",
-        mode="top-headlines",
-    )
-
-    nac.collcet_news()
-
-    # nca = NewsCatcherAPICollector(print_format="markdown", lang="ja", topic="news")
-    # nca.collcet_news()

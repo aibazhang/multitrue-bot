@@ -1,5 +1,5 @@
 import argparse
-from collector import NewsAPICollector
+from bighea import NewsAPICollector
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Get Headline news")

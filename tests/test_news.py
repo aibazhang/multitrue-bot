@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from bighea.news.news import News
+from bighea import News
 
 
 class TestNews:
