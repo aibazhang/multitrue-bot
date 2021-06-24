@@ -4,7 +4,7 @@ import json
 import pathlib
 
 from abc import ABCMeta, abstractmethod
-from .news import News
+from news import News
 
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
