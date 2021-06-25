@@ -40,7 +40,6 @@ class WebNewsCollector(NewsCollector):
         base_url=None,
         mode=None,
         news_list=None,
-        time_zone=None,
         time_format=None,
         headers=None,
     ):
@@ -50,13 +49,10 @@ class WebNewsCollector(NewsCollector):
         self._mode = mode
         if news_list is None:
             news_list = list()
-        if time_zone is None:
-            time_zone = 9
         if block_list is None:
             block_list = json.load(open(KEY_PATH / "block_list.json", "r"))["block_list"]
 
         self.news_list = news_list
-        self.time_zone = time_zone
         self.time_format = time_format
         self.block_list = block_list
 
@@ -87,7 +83,7 @@ class WebNewsCollector(NewsCollector):
             if self.filter_news(news.title):
                 continue
 
-            news.trans_utc_to_local(news.published_time, self.time_zone, self.time_format)
+            news.trans_utc_to_local(news.published_time, self.time_format)
             if news.is_latest():
                 self.print_news(news)
 

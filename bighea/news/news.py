@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class News:
@@ -20,9 +20,9 @@ class News:
         news_datetime = datetime.strptime(self.published_time, "%Y-%m-%d %H:%M:%S")
         return (datetime.now() - news_datetime) < timedelta(hours=+28)
 
-    def trans_utc_to_local(self, date_utc, time_zone, time_format):
+    def trans_utc_to_local(self, date_utc, time_format):
         datetime_utc = datetime.strptime(date_utc.replace("Z", ""), time_format)
-        datetime_local = datetime_utc + timedelta(hours=+time_zone)
+        datetime_local = datetime_utc.replace(tzinfo=timezone.utc).astimezone(tz=None)
         self.published_time = datetime_local.strftime("%Y-%m-%d %H:%M:%S")
 
     def print_format_telebot(self):
