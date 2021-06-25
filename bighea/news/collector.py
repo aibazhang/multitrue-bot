@@ -63,7 +63,11 @@ class WebNewsCollector(NewsCollector):
         self.headers = headers
 
     def _get(self):
-        self.response = requests.get(self.base_url + self._mode, headers=self.headers, params=self.params).text
+        self.response = requests.get(self.base_url + self.mode, headers=self.headers, params=self.params).text
+        data_json = json.loads(self.response)
+        if data_json["status"] == "error":
+            print("{}: {}".format(data_json["code"], data_json["message"]))
+            raise requests.exceptions.ConnectionError
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
@@ -72,7 +76,7 @@ class WebNewsCollector(NewsCollector):
         if self.print_format not in ["markdown", "telebot"]:
             raise NotImplementedError
         if self.print_format == "telebot":
-            return news.print_format_telebot()
+            print(news.print_format_telebot())
         if self.print_format == "markdown":
             print(news.print_format_markdown())
 
