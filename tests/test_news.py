@@ -1,23 +1,10 @@
 import pytest
 from datetime import datetime
 from bighea import News
+from bighea.news.news import print_format_telebot, print_format_markdown
 
 
 class TestNews:
-    def test_print_format(self):
-        markdown = "- 1970-12-1 00:00:00 [title](example.org)\n"
-        telebot = "\n\nAgency: CNN\nAuthor: Smith\nTime: 1970-12-1 00:00:00\nTitle: title\n\nRead here: example.org"
-
-        news = News()
-        news.title = "title"
-        news.url = "example.org"
-        news.published_time = "1970-12-1 00:00:00"
-        news.author = "Smith"
-        news.source = "CNN"
-
-        assert news.print_format_telebot() == telebot
-        assert news.print_format_markdown() == markdown
-
     @pytest.mark.parametrize(
         "datetime_test, result",
         [
@@ -30,3 +17,15 @@ class TestNews:
         news = News()
         news.published_time = datetime_test
         assert news.is_latest() == result
+
+
+def test_print_format():
+    title = "title"
+    url = "example.org"
+    published_time = "1970-12-1 00:00:00"
+    author = "Smith"
+    source = "CNN"
+    markdown = "- 1970-12-1 00:00:00 [title](example.org)\n"
+    telebot = "\n\nAgency: CNN\nAuthor: Smith\nTime: 1970-12-1 00:00:00\nTitle: title\n\nRead here: example.org"
+    assert print_format_telebot(source, author, published_time, title, url) == telebot
+    assert print_format_markdown(published_time, title, url) == markdown
