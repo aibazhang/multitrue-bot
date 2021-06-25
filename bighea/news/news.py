@@ -25,19 +25,21 @@ class News:
         datetime_local = datetime_utc.replace(tzinfo=timezone.utc).astimezone(tz=None)
         self.published_time = datetime_local.strftime("%Y-%m-%d %H:%M:%S")
 
-    def print_format_telebot(self):
-        return (
-            "\n\nAgency: "
-            + str(self.source)
-            + "\nAuthor: "
-            + str(self.author)
-            + "\nTime: "
-            + str(self.published_time)
-            + "\nTitle: "
-            + self.title
-            + "\n\nRead here: "
-            + str(self.url)
-        )
 
-    def print_format_markdown(self):
-        return "- {} [{}]({})\n".format(self.published_time, self.title, self.url)
+def print_format_telebot(source, author, published_time, title, url):
+    return (
+        "\n\nAgency: "
+        + str(source)
+        + "\nAuthor: "
+        + str(author)
+        + "\nTime: "
+        + str(published_time)
+        + "\nTitle: "
+        + title
+        + "\n\nRead here: "
+        + str(url)
+    )
+
+
+def print_format_markdown(published_time, title, url):
+    return "- {} [{}]({})\n".format(published_time, title, url)

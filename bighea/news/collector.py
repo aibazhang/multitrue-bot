@@ -4,7 +4,7 @@ import json
 import pathlib
 
 from abc import ABCMeta, abstractmethod
-from .news import News
+from .news import News, print_format_markdown, print_format_telebot
 
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
@@ -65,27 +65,31 @@ class WebNewsCollector(NewsCollector):
             print("{}: {}".format(data_json["code"], data_json["message"]))
             raise requests.exceptions.ConnectionError
 
-    def filter_news(self, text):
-        return any(bl in text for bl in self.block_list)
+    def filter_news(self):
+        filtered_news_list = list()
+        for news in self.news_list:
+            if any(bl in news.title for bl in self.block_list):
+                continue
+            filtered_news_list.append(news)
+        self.news_list = filtered_news_list
 
     def print_news(self, news):
         if self.print_format not in ["markdown", "telebot"]:
             raise NotImplementedError
         if self.print_format == "telebot":
-            print(news.print_format_telebot())
+            return print_format_telebot(news.source, news.author, news.published_time, news.title, news.url)
         if self.print_format == "markdown":
-            print(news.print_format_markdown())
+            print(print_format_markdown(news.published_time, news.title, news.url))
 
     def collcet_news(self):
         self._get()
         self.format_news()
-        for news in self.news_list:
-            if self.filter_news(news.title):
-                continue
+        self.filter_news()
 
-            news.trans_utc_to_local(news.published_time, self.time_format)
-            if news.is_latest():
-                self.print_news(news)
+        # transfer to local time
+        [news.trans_utc_to_local(news.published_time, self.time_format) for news in self.news_list]
+
+        self.news_list = [self.print_news(news) for news in self.news_list if news.is_latest()]
 
     def format_news(self):
         raise NotImplementedError
