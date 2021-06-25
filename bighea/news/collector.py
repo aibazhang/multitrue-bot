@@ -63,8 +63,11 @@ class WebNewsCollector(NewsCollector):
         self.headers = headers
 
     def _get(self):
-        # TODO: throw and error
-        self.response = requests.get(self.base_url + self.mode, headers=self.headers, params=self.params).text
+        self.response = requests.get(self.base_url + self._mode, headers=self.headers, params=self.params).text
+        data_json = json.loads(self.response)
+        if data_json["status"] == "error":
+            print("{}: {}".format(data_json["code"], data_json["message"]))
+            raise requests.exceptions.ConnectionError
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
@@ -181,6 +184,10 @@ class NewsCatcherAPICollector(WebNewsCollector):
             news.description = text["summary"]
 
             self.news_list.append(news)
+
+
+class Mediastack:
+    pass
 
 
 """
