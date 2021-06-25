@@ -64,10 +64,6 @@ class WebNewsCollector(NewsCollector):
 
     def _get(self):
         self.response = requests.get(self.base_url + self._mode, headers=self.headers, params=self.params).text
-        data_json = json.loads(self.response)
-        if data_json["status"] == "error":
-            print("{}: {}".format(data_json["code"], data_json["message"]))
-            raise requests.exceptions.ConnectionError
 
     def filter_news(self, text):
         return any(bl in text for bl in self.block_list)
@@ -143,13 +139,20 @@ class NewsAPICollector(WebNewsCollector):
 
 
 class NewsCatcherAPICollector(WebNewsCollector):
+    """
+    {"message":"You are not subscribed to this API."}⏎
+    """
+
     def __init__(
         self,
         print_format=None,
         mode=None,
-        lang=None,
+        language=None,
         country=None,
-        topic=None,
+        category=None,
+        sources=None,
+        query=None,
+        page_size=None,
     ):
         super().__init__()
         self._mode = mode
@@ -160,7 +163,7 @@ class NewsCatcherAPICollector(WebNewsCollector):
             "x-rapidapi-key": json.load(open(KEY_PATH / "keys.json", "r"))["news_catcher_key"],
             "x-rapidapi-host": "newscatcher.p.rapidapi.com",
         }
-        self.params = {"lang": lang, "country": country, "topic": topic}
+        self.params = {"lang": language, "country": country, "topic": category}
 
     @property
     def mode(self):
@@ -186,18 +189,64 @@ class NewsCatcherAPICollector(WebNewsCollector):
             self.news_list.append(news)
 
 
-class Mediastack:
-    pass
+class MediastackCollector(WebNewsCollector):
+    """
+    https_access_restricted","message":"Access Restricted -
+    Your current Subscription Plan does not support HTTPS Encryption.
+    """
+
+    def __init__(
+        self,
+        print_format=None,
+        mode=None,
+        country=None,
+        category=None,
+        sources=None,
+        query=None,
+        page_size=None,
+    ):
+        super().__init__()
+        self._mode = mode
+        self.print_format = print_format
+        self.base_url = "https://api.mediastack.com/v1/"
+        self.key = json.load(open(KEY_PATH / "keys.json", "r"))["mediastack_key"]
+        self.time_format = "%Y-%m-%dT%H:%M:%S"
+        self.params = {
+            "countries": country,
+            "categories": category,
+            "sources": sources,
+            "keywords": query,
+            "limit": page_size,
+        }
+
+    @property
+    def mode(self):
+        self._mode = "news"
+        return self._mode
+
+    def _get(self):
+        self.response = requests.get(
+            "{}{}?access_key={}".format(self.base_url, self._mode, self.key), params=self.params
+        ).text
+
+    def format_news(self):
+        for text in json.loads(self.response)["data"]:
+            news = News()
+            news.author = text["author"]
+            news.title = text["title"]
+            news.description = text["description"]
+            news.url = text["url"]
+            news.source = text["source"]
+            news.image = text["image"]
+            news.published_time = text["published_at"]
+            self.news_list.append(news)
 
 
 """
-TODO:
-Mediastack
-https://mediastack.com/documentation
-
-Webhouse
-Contify
-Connexun
-Aylien
+Others News API
+- Webhouse
+- Contify
+- Connexun
+- Aylien
 https://geekflare.com/global-news-api/
 """

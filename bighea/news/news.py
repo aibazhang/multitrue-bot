@@ -14,6 +14,7 @@ class News:
         self.country = None
         self.language = None
         self.copyright = None
+        self.image = None
 
     def is_latest(self):
         news_datetime = datetime.strptime(self.published_time, "%Y-%m-%d %H:%M:%S")
