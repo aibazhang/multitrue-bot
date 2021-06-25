@@ -4,7 +4,7 @@ import json
 import pathlib
 
 from abc import ABCMeta, abstractmethod
-from .news import News
+from .news import News, print_format_markdown, print_format_telebot
 
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
 
@@ -76,9 +76,9 @@ class WebNewsCollector(NewsCollector):
         if self.print_format not in ["markdown", "telebot"]:
             raise NotImplementedError
         if self.print_format == "telebot":
-            print(news.print_format_telebot())
+            print(print_format_telebot(news.source, news.author, news.published_time, news.title, news.url))
         if self.print_format == "markdown":
-            print(news.print_format_markdown())
+            print(print_format_markdown(news.published_time, news.title, news.url))
 
     def collcet_news(self):
         self._get()

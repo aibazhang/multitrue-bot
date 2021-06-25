@@ -24,7 +24,7 @@ if __name__ == "__main__":
         country="us",
         category="general",
         page_size=10,
-        print_format="telebot",
+        print_format="markdown",
         mode="top-headlines",
     )
 
