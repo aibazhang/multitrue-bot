@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
-from bighea import News
-from bighea.news.news import print_format_telebot, print_format_markdown
+from src import News
+from src.news.news import print_format_telebot, print_format_markdown
 
 
 class TestNews:

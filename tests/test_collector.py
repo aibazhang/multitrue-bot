@@ -1,4 +1,4 @@
-from bighea import WebNewsCollector, NewsAPICollector
+from src import WebNewsCollector, NewsAPICollector
 from io import StringIO
 from contextlib import redirect_stdout
 

@@ -244,13 +244,3 @@ class MediastackCollector(WebNewsCollector):
             news.image = text["image"]
             news.published_time = text["published_at"]
             self.news_list.append(news)
-
-
-"""
-Others News API
-- Webhouse
-- Contify
-- Connexun
-- Aylien
-https://geekflare.com/global-news-api/
-"""
