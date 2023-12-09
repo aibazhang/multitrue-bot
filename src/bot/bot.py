@@ -1,19 +1,11 @@
+import logging
 import os
+import pathlib
 import sys
 
-import json
-import logging
-import pathlib
-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackQueryHandler,
-)
+from telegram.ext import (CallbackQueryHandler, CommandHandler,
+                          ConversationHandler, Updater)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
@@ -161,7 +153,7 @@ def end(update, context):
 
 def main():
     updater = Updater(
-        token=json.load(open(KEY_PATH / "keys.json", "r"))["telegram_key"],
+        token=os.environ["TELEGRAM_KEY"],
         use_context=True,
     )
 

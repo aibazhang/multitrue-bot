@@ -12,16 +12,16 @@ Support 🇺🇸🇯🇵🇹🇼🇨🇳🇰🇷
    ([NewsAPI](https://newsapi.org/),
    [Telegram Bot](https://core.telegram.org/bots))
 
-2. Setup environment variables. Copy `key.json.sample` to `key.json` and replace `news_api_key` and `telegram_key` with your API keys.
+2. Build
 
-3. Launch
-
+```bash
+docker build -t multitrue-bot .
 ```
-# Install dependencies
-pip3 install -r requirements.txt
 
-# Run bot
-python ./src/bot/bot.py
+3. Run
+
+```bash
+docker run -e TELEGRAM_KEY=your_telegram_key -e NEWS_API_KEY=your_news_api_key multitrue-bot
 ```
 
 ## License

@@ -1,9 +1,10 @@
-import os
-import requests
 import json
+import os
 import pathlib
-
 from abc import ABCMeta, abstractmethod
+
+import requests
+
 from .news import News, print_format_markdown, print_format_telebot
 
 KEY_PATH = pathlib.Path(os.path.dirname(__file__), "../..")
@@ -113,7 +114,7 @@ class NewsAPICollector(WebNewsCollector):
         self._mode = mode
         self.print_format = print_format
         self.base_url = "https://newsapi.org/v2/"
-        self.headers = {"X-Api-Key": json.load(open(KEY_PATH / "keys.json", "r"))["news_api_key"]}
+        self.headers = {"X-Api-Key": os.environ["NEWS_API_KEY"]}
         self.time_format = "%Y-%m-%dT%H:%M:%S"
         self.params = {
             "country": country,
